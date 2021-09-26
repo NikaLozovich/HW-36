@@ -1,12 +1,9 @@
 'use strict';
 
 const todoController = {
+    idToDo: 0,
     counter() {
-        if(!localStorage.id){
-            localStorage.setItem('id', 0);
-        }
-        localStorage.id++;
-        return +localStorage.id;
+        return this.idToDo++;
     },
     getData() {
         if(!todoModel.getData()) return false;
@@ -23,7 +20,7 @@ const todoController = {
             obj[input.name] = input.value;
         }
         obj.completed = false;
-        obj.id = this.counter();
+        obj.id = this.idToDo;
         return obj;
     },
     remove(identity){
@@ -38,10 +35,8 @@ const todoModel = {
     dbName: 'saved_data',
     remove(e) {
         let identity = e.target.parentNode.id;
-        let rem = todoController.remove(identity);
-        let elem = document.getElementById(identity);
-        elem.parentNode.parentNode.removeChild(elem.parentNode);
-        this.replaceData(rem || null);
+        document.getElementById(identity).parentNode.parentNode.removeChild(document.getElementById(identity).parentNode);
+        this.replaceData(todoController.remove(identity) || null);
     },
     saveData(todoItem) {
         if(localStorage[this.dbName]) {
@@ -74,7 +69,7 @@ const todoView = {
     setEvents() {
         window.addEventListener('load', this.onLoadFunc.bind(this));
         this.form.addEventListener('submit', this.formSubmit.bind(this));
-        this.itemClick.addEventListener('click', this.doneTask);
+        this.itemClick.addEventListener('click', this.taskPrfeormed);
         this.itemClick.addEventListener('click', this.remove);
         this.clearBtn.addEventListener('click', this.removeAll);
     },
@@ -117,14 +112,15 @@ const todoView = {
         description.className = 'taskDescription';
         wrp.append(description);
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'taskCheckbox';
-        wrp.append(checkbox);
+        const chkBox = document.createElement('input');
+        chkBox.type = 'checkbox';
+        chkBox.className = 'taskCheckbox';
+        wrp.append(chkBox);
 
-        const remove = document.createElement('div');
-        remove.className = 'taskRemove';
-        remove.innerHTML = '&times';
+        const remove = document.createElement('button');
+        remove.type = 'button'
+        remove.className = 'delBtn';
+        remove.innerHTML = 'del';
         wrp.append(remove);
 
         return mainWrp;
@@ -134,22 +130,20 @@ const todoView = {
         template.getElementsByClassName('taskCheckbox')[0].checked = completed || false;
         document.querySelector('#todoItems').prepend(template);
     },
-    doneTask(e) {
+    taskPrfeormed(e) {
         if (e.target.classList.contains("taskCheckbox")) {
-            let elId = e.target.parentNode.id;
-
-            const currentItems = todoController.getData();
-            let newItems = currentItems?.map(item => {
-                if (item.id === +elId){
+            
+            let convertedItems = todoController.getData()?.map(item => {
+                if (item.id === Number(e.target.parentNode.id)){
                     item.completed = !item.completed;
                 }
                 return item;
             });
-            todoModel.replaceData(newItems);
+            todoModel.replaceData(convertedItems);
         }
     },
     remove(e) {
-        if (e.target.classList.contains("taskRemove")) {
+        if (e.target.classList.contains("delBtn")) {
             todoModel.remove(e);
         }
     },
