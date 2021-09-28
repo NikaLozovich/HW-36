@@ -23,21 +23,20 @@ const todoController = {
         obj.id = this.idToDo;
         return obj;
     },
-    remove(identity){
-        return this.getData().filter(obj => Number.parseInt(obj.id) !== Number.parseInt(identity));
-    },
-    removeAll(){
-        todoModel.removeAll();
+    delete(identity) {
+        return this.getData().filter(obj => Number(obj.id) !== Number(identity));
     }
 };
 
 const todoModel = {
     dbName: 'saved_data',
-    remove(e) {
+    
+    delete(e) {
         let identity = e.target.parentNode.id;
         document.getElementById(identity).parentNode.parentNode.removeChild(document.getElementById(identity).parentNode);
-        this.replaceData(todoController.remove(identity) || null);
+        this.newData(todoController.delete(identity) || null);
     },
+    
     saveData(todoItem) {
         if(localStorage[this.dbName]) {
             const data = JSON.parse(localStorage[this.dbName]);
@@ -53,25 +52,23 @@ const todoModel = {
         if(!localStorage.getItem(this.dbName)) return false;
         return localStorage.getItem(this.dbName);
     },
-    replaceData(newTodoArray) {
-        localStorage.setItem(this.dbName, JSON.stringify(newTodoArray));
+    newData(newLocalData) {
+        localStorage.setItem(this.dbName, JSON.stringify(newLocalData));
     },
-    removeAll(){
-        localStorage.clear();
-        location.reload();
-    }
+    
 };
 
 const todoView = {
     form: document.querySelector('#todoForm'),
     itemClick: document.querySelector('#todoItems'),
-    clearBtn: document.querySelector('#clear'),
+    
     setEvents() {
         window.addEventListener('load', this.onLoadFunc.bind(this));
         this.form.addEventListener('submit', this.formSubmit.bind(this));
-        this.itemClick.addEventListener('click', this.taskPrfeormed);
-        this.itemClick.addEventListener('click', this.remove);
-        this.clearBtn.addEventListener('click', this.removeAll);
+        
+         this.itemClick.addEventListener('click', this.newData);
+         this.itemClick.addEventListener('click', this.delete);
+        
     },
     formSubmit(e) {
         e.preventDefault();
@@ -83,16 +80,18 @@ const todoView = {
 
         const todoItemObject = todoController.setData(inputs);
         this.renderItem(todoItemObject);
+        todoController.counter();
         e.target.reset();
     },
     onLoadFunc() {
         if (todoController.getData()){
         todoController.getData().forEach(item => {
             this.renderItem(item);
+            todoController.idToDo = item.id + 1
         });
         }
     },
-    createTemplate(titleText = '', descriptionText = '', id = todoController.counter()) {
+    createTemplate(titleText = '', descriptionText = '', completed, id) {
         const mainWrp = document.createElement('div');
         mainWrp.className = 'col-4';
 
@@ -115,40 +114,39 @@ const todoView = {
         const chkBox = document.createElement('input');
         chkBox.type = 'checkbox';
         chkBox.className = 'taskCheckbox';
+        if (completed) chkBox.checked = true;
         wrp.append(chkBox);
 
-        const remove = document.createElement('button');
-        remove.type = 'button'
-        remove.className = 'delBtn';
-        remove.innerHTML = 'del';
-        wrp.append(remove);
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button'
+        delBtn.className = 'delBtn';
+        delBtn.innerHTML = 'del';
+        wrp.append(delBtn);
 
         return mainWrp;
     },
     renderItem({title, description, completed, id}) {
-        const template = this.createTemplate(title, description, id);
-        template.getElementsByClassName('taskCheckbox')[0].checked = completed || false;
-        document.querySelector('#todoItems').prepend(template);
+        const template = this.createTemplate(title, description, completed, id);
+        this.itemClick.prepend(template);
     },
-    taskPrfeormed(e) {
-        if (e.target.classList.contains("taskCheckbox")) {
-            
-            let convertedItems = todoController.getData()?.map(item => {
-                if (item.id === Number(e.target.parentNode.id)){
-                    item.completed = !item.completed;
+     newData(e) {
+        let transfer = todoController.getData();
+          for (let item of transfer) {
+              if (e.target.classList.contains("taskCheckbox")) {
+                if (item.id === Number(e.target.parentNode.id)) {
+                    item.completed = e.target.checked;
                 }
-                return item;
-            });
-            todoModel.replaceData(convertedItems);
-        }
+              }
+              
+          }
+
+             todoModel.newData(transfer);
+        
     },
-    remove(e) {
+     delete(e) {
         if (e.target.classList.contains("delBtn")) {
-            todoModel.remove(e);
-        }
-    },
-    removeAll() {
-        todoController.removeAll();
+            todoModel.delete(e)
+     }
     }
 };
 
